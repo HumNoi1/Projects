@@ -8,8 +8,12 @@ class Settings(BaseSettings):
     MILVUS_HOST: str
     MILVUS_PORT: int
     
-    # Supabase Configuration (จะเพิ่มภายหลัง)
-    
+    # llama model path
+    LLM_MODEL_PATH: str = "models/llama-3.2-typhoon2-3b-instruct-q4_k_m.gguf"
+    LLM_N_CTX: int = 4096
+    LLM_N_BATCH: int = 512
+    LLM_N_THREADS: int = 4
+    LLM_N_GPU_LAYERS: int = 32
     class Config:
         env_file = ".env"
 

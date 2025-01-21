@@ -1,3 +1,4 @@
 volumes
 venv
 .venv
+llama3.2-typhoon2-3b-instruct-q4_k_m.gguf

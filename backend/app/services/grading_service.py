@@ -12,10 +12,7 @@ logger = logging.getLogger(__name__)
 
 class GradingService:
     def __init__(self):
-        self.llm = ChatOpenAI(
-            model_name="gpt-4",
-            temperature=0.0
-        )
+        self.llm_service = LLMService()
         
     async def create_grading_prompt(
         self,
@@ -26,31 +23,34 @@ class GradingService:
     ) -> str:
         """Create a structured prompt for grading"""
         
-        prompt_template = ChatPromptTemplate.from_messages([
-            ("system", """You are an expert grader for academic assignments.
-            Grade the student's answer based on the reference answer and given criteria.
-            Provide detailed feedback and scores.
-            
-            Output format must be valid JSON with the following structure:
-            {
-                "criteria_scores": {"criteria_name": score},
-                "total_score": float,
-                "feedback": "detailed feedback",
-                "confidence_score": float between 0-1
-            }"""),
-            ("user", """Reference Answer: {reference}
-            
-            Student Answer: {student_answer}
-            
-            Grading Criteria:
-            {criteria_json}
-            
-            Language: {language}
-            
-            Please grade the answer and provide structured feedback.""")
+        # Create grading prompt for llama
+        criteria_text = "\n".join([
+            f"- {c.name} (max score: {c.max_score}, weight: {c.weight}):\n {c.description}"
+            for c in criteria
         ])
         
-        return prompt_template
+        prompt = f"""Please grade the following student answer based on the reference answer and criteria.
+        
+        Reference answer:
+        {reference_answer}
+        
+        Student answer:
+        {student_answer}
+        
+        Grading criteria:
+        {criteria_text}
+        
+        Language for feedback: {language}
+        
+        please provide your evaluation and score in the following JSON format:
+        {{
+            "criteria_scores"; {{"criteria_name": score}},
+            "total_score": float,
+            "feedback": "detailed feedback in {language}"
+            "confidence_score": float between 0-1
+        }}"""
+        
+        return prompt
 
     async def grade_answer(
         self,
@@ -59,9 +59,11 @@ class GradingService:
         criteria: List[GradingCriteria],
         language: str = "th"
     ) -> GradingResult:
-        """Grade student answer using LLM"""
+        """
+        ตรวจให้คะแนนคำตอบของนักเรียนโดยใช้ LLaMA
+        """
         try:
-            # Create grading chain
+            # create grading prompt
             prompt = await self.create_grading_prompt(
                 criteria=criteria,
                 reference_answer=reference_answer,
@@ -69,29 +71,28 @@ class GradingService:
                 language=language
             )
             
-            grading_chain = LLMChain(
-                llm=self.llm,
-                prompt=prompt
+            # เรียกใช้ Llama
+            response = await self.llm_service.generate_response(
+                prompt=prompt,
+                temperature=0.1, 
             )
             
-            # Execute grading with token tracking
-            with get_openai_callback() as cb:
-                result = await grading_chain.arun({
-                    "reference": reference_answer,
-                    "student_answer": student_answer,
-                    "criteria_json": [c.dict() for c in criteria],
-                    "language": language
-                })
-            
-            # Parse LLM response
-            grading_data = json.loads(result)
-            
+            # แปลงคำตอบจาก LLaMA ให้เป็น JSON
+            try:
+                grading_result = json.loads(response["content"])
+            except json.JSONDecodeError:
+                # ถ้าแปลง JSON ให้ลองทำความสะอาดข้อมูลก่อน
+                cleaned_content = response["content"].strip()
+                # หา JSON block แรกที่เจอ
+                start = cleaned_content.find("{")
+                end = cleaned_content.rfind("}")
+                grading_data = cleaned_content[start:end]
             return GradingResult(
                 **grading_data,
-                grading_time=datetime.now(),
-                evaluator_id="gpt-4"
+                grading_time=datetime.nom(),
+                evaluator_id="llama-3.2-typhoon22-3b"
             )
-
+        
         except Exception as e:
             logger.error(f"Error in grading process: {str(e)}")
             raise
