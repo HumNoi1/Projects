@@ -1,5 +1,7 @@
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.docstore.document import Document
+
+from app.db.session import get_milvus
 from .embedding_service import EmbeddingService
 from typing import List, Dict, Any
 import logging
@@ -7,7 +9,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 class DocumentProcessor:
-    def __init__(self):
+    def __init__(self, db_manager=None):
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=500,
             chunk_overlap=50,
@@ -15,6 +17,13 @@ class DocumentProcessor:
             separators=["\n\n", "\n", " ", ""]
         )
         self.embedding_service = EmbeddingService()
+        self.db_manager = db_manager
+    
+    async def get_db(self):
+        """Get database connection"""
+        if self.db_manager:
+            return self.db_manager
+        return await get_milvus()
 
     async def process_and_embed_documents(
         self,

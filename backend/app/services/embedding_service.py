@@ -1,4 +1,4 @@
-from langchain.embeddings import HuggingFaceEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from pymilvus import connections, Collection, utility
 from typing import List, Optional, Dict
 import numpy as np
