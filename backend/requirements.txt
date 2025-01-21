@@ -1,0 +1,8 @@
+fastapi>=0.103.0
+uvicorn>=0.23.2
+python-dotenv>=1.0.0
+pydantic>=2.3.0
+pydantic-settings>=2.0.3
+langchain>=0.0.300
+pymilvus>=2.3.3
+supabase>=1.0.3
