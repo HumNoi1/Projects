@@ -8,6 +8,8 @@ from datetime import datetime
 import json
 import logging
 
+from backend.app.services.llm_service import LLMService
+
 logger = logging.getLogger(__name__)
 
 class GradingService:
