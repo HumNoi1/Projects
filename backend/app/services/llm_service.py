@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 class LLMService:
     def __init__(self):
         # กำหนดพาธไปยังโมเดล
-        model_path = Path("models/llama-3.2-typhoon2-3b-instruct-q4_k_m.gguf")
+        model_path = Path("models\llama3.2-typhoon2-3b-instruct-q4_k_m.gguf")
         
         if not model_path.exists():
             raise FileNotFoundError(

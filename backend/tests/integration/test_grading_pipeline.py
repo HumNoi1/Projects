@@ -40,11 +40,11 @@ class TestGradingPipeline:
         try:
             # 1. Process documents
             doc_processor = DocumentProcessor()
-            ref_result = await doc_processor.process_and_embed_document(
+            ref_result = await doc_processor.process_and_embed_documents(
                 reference_doc.content,
                 {"doc_type": "reference"}
             )
-            student_result = await doc_processor.process_and_embed_document(
+            student_result = await doc_processor.process_and_embed_documents(
                 student_doc.content,
                 {"doc_type": "answer"}
             )
