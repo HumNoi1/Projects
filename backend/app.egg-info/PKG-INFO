@@ -11,8 +11,11 @@ Requires-Dist: pytest-cov>=3.0.0
 Requires-Dist: pytest-asyncio>=0.18.0
 Requires-Dist: asynctest>=0.13.0
 Requires-Dist: coverage>=6.0.0
-Requires-Dist: langchain>=0.0.300
+Requires-Dist: langchain>=0.3.15
+Requires-Dist: langchain-community>=0.3.15
+Requires-Dist: langchain-huggingface>=0.1.2
 Requires-Dist: pymilvus>=2.3.3
 Requires-Dist: supabase>=1.0.3
 Requires-Dist: llama-cpp-python>=0.1.9
+Requires-Dist: sentence-transformers
 Dynamic: requires-dist

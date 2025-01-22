@@ -1,14 +1,15 @@
-from langchain.prompts import ChatPromptTemplate
-from langchain.chat_models import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_community.chat_models import ChatOpenAI
 from langchain.chains import LLMChain
-from langchain.callbacks import get_openai_callback
+from langchain_community.callbacks import get_openai_callback
 from typing import List, Dict, Any
 from app.models.grading import GradingCriteria, GradingResult
 from datetime import datetime
 import json
 import logging
 
-from backend.app.services.llm_service import LLMService
+from app.services.llm_service import LLMService
 
 logger = logging.getLogger(__name__)
 
@@ -23,36 +24,51 @@ class GradingService:
         student_answer: str,
         language: str
     ) -> str:
-        """Create a structured prompt for grading"""
+        """
+        สร้าง prompt ที่มีโครงสร้างสำหรับการให้คะแนน
         
-        # Create grading prompt for llama
+        Args:
+            criteria: รายการเกณฑ์การให้คะแนน
+            reference_answer: คำตอบอ้างอิง
+            student_answer: คำตอบของนักเรียน
+            language: ภาษาที่ใช้สำหรับ feedback
+            
+        Returns:
+            str: Prompt ที่พร้อมสำหรับส่งให้ LLM
+        """
+        # สร้างข้อความอธิบายเกณฑ์การให้คะแนน
         criteria_text = "\n".join([
-            f"- {c.name} (max score: {c.max_score}, weight: {c.weight}):\n {c.description}"
+            f"- {c.name} (คะแนนเต็ม: {c.max_score}, น้ำหนัก: {c.weight}):\n  {c.description}"
             for c in criteria
         ])
         
-        prompt = f"""Please grade the following student answer based on the reference answer and criteria.
+        # สร้าง prompt template ที่มีโครงสร้าง
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", "คุณคือผู้เชี่ยวชาญในการตรวจและให้คะแนนงานวิชาการ"),
+            ("human", 
+             f"""กรุณาตรวจและให้คะแนนคำตอบของนักเรียนตามเกณฑ์ที่กำหนด
+             
+             คำตอบอ้างอิง:
+             {reference_answer}
+             
+             คำตอบของนักเรียน:
+             {student_answer}
+             
+             เกณฑ์การให้คะแนน:
+             {criteria_text}
+             
+             ภาษาที่ใช้ในการให้ feedback: {language}
+             
+             กรุณาให้คะแนนและ feedback ในรูปแบบ JSON ดังนี้:
+             {{
+                 "criteria_scores": {{"ชื่อเกณฑ์": คะแนน}},
+                 "total_score": คะแนนรวม,
+                 "feedback": "คำแนะนำโดยละเอียด",
+                 "confidence_score": ค่าความเชื่อมั่น (0-1)
+             }}""")
+        ])
         
-        Reference answer:
-        {reference_answer}
-        
-        Student answer:
-        {student_answer}
-        
-        Grading criteria:
-        {criteria_text}
-        
-        Language for feedback: {language}
-        
-        please provide your evaluation and score in the following JSON format:
-        {{
-            "criteria_scores"; {{"criteria_name": score}},
-            "total_score": float,
-            "feedback": "detailed feedback in {language}"
-            "confidence_score": float between 0-1
-        }}"""
-        
-        return prompt
+        return prompt.format()
 
     async def grade_answer(
         self,

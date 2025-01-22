@@ -19,6 +19,36 @@ class DocumentProcessor:
         self.embedding_service = EmbeddingService()
         self.db_manager = db_manager
     
+    async def process_document(
+        self,
+        content: str,
+        metadata: Dict[str, Any]
+    ) -> List[Document]:
+        """แบ่งเอกสารเป็นชิ้นส่วนที่เหมาะสมสำหรับการประมวลผล
+        Args:
+            content: เนื้อหาเอกสาร
+            metadata: ข้อมูล metadata ที่เกี่ยวข้อง
+        
+        Returns:
+            List[Document]: รายการของ Document object ที่แบ่งแล้ว
+        """
+
+        try:
+            # clean data
+            cleaned_content = self._clean_text(content)
+            
+            # create document object
+            doc = Document(page_content=cleaned_content, metadata=metadata)
+            
+            #split document into chunks
+            documents = self.text_splitter.split_documents([doc])
+            
+            return documents
+        
+        except Exception as e:
+            logger.error(f"Error in document processing pipeline: {str(e)}")
+            raise
+
     async def get_db(self):
         """Get database connection"""
         if self.db_manager:
@@ -66,9 +96,5 @@ class DocumentProcessor:
     def _clean_text(self, text: str) -> str:
         """Clean and normalize text content"""
         # Remove excessive whitespace
-        text = " ".join(text.split())
-        
-        # Remove special characters but keep Thai characters
-        # Add more specific cleaning rules as needed
-        
+        text = " ".join(text.split())      
         return text

@@ -15,9 +15,12 @@ setup(
         "pytest-asyncio>=0.18.0",
         "asynctest>=0.13.0",
         "coverage>=6.0.0",
-        "langchain>=0.0.300",
+        "langchain>=0.3.15",
+        "langchain-community>=0.3.15",
+        "langchain-huggingface>=0.1.2",
         "pymilvus>=2.3.3",
         "supabase>=1.0.3",
-        "llama-cpp-python>=0.1.9"
+        "llama-cpp-python>=0.1.9",
+        "sentence-transformers"
     ],
 )
