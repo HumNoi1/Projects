@@ -1,74 +1,115 @@
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser
-from langchain_community.chat_models import ChatOpenAI
-from langchain.chains import LLMChain
-from langchain_community.callbacks import get_openai_callback
-from typing import List, Dict, Any
-from app.models.grading import GradingCriteria, GradingResult
 from datetime import datetime
 import json
 import logging
-
+from typing import List, Dict, Any
+from urllib import response
+from app.models.grading import GradingCriteria, GradingResult
 from app.services.llm_service import LLMService
 
 logger = logging.getLogger(__name__)
 
 class GradingService:
+    """
+    บริการตรวจให้คะแนนที่ใช้ LLM ในการวิเคราะห์และประเมินคำตอบของนักเรียน
+    คลาสนี้จัดการการสร้าง prompt, การประมวลผลคำตอบจาก LLM, และการตรวจสอบความถูกต้องของผลลัพธ์
+    """
+
     def __init__(self):
+        """
+        เริ่มต้นบริการตรวจให้คะแนนโดยสร้าง instance ของ LLMService
+        """
         self.llm_service = LLMService()
-        
+
     async def create_grading_prompt(
         self,
         criteria: List[GradingCriteria],
         reference_answer: str,
         student_answer: str,
-        language: str
+        language: str = "th"
     ) -> str:
         """
-        สร้าง prompt ที่มีโครงสร้างสำหรับการให้คะแนน
-        
-        Args:
-            criteria: รายการเกณฑ์การให้คะแนน
-            reference_answer: คำตอบอ้างอิง
-            student_answer: คำตอบของนักเรียน
-            language: ภาษาที่ใช้สำหรับ feedback
-            
-        Returns:
-            str: Prompt ที่พร้อมสำหรับส่งให้ LLM
+        สร้าง prompt ที่ชัดเจนสำหรับ LLM เพื่อให้ได้ผลลัพธ์ในรูปแบบ JSON ที่ถูกต้อง
         """
-        # สร้างข้อความอธิบายเกณฑ์การให้คะแนน
         criteria_text = "\n".join([
-            f"- {c.name} (คะแนนเต็ม: {c.max_score}, น้ำหนัก: {c.weight}):\n  {c.description}"
+            f"- {c.name} (คะแนนเต็ม: {c.max_score}, น้ำหนัก {c.weight}):\n {c.description}"
             for c in criteria
         ])
         
-        # สร้าง prompt template ที่มีโครงสร้าง
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", "คุณคือผู้เชี่ยวชาญในการตรวจและให้คะแนนงานวิชาการ"),
-            ("human", 
-             f"""กรุณาตรวจและให้คะแนนคำตอบของนักเรียนตามเกณฑ์ที่กำหนด
-             
-             คำตอบอ้างอิง:
-             {reference_answer}
-             
-             คำตอบของนักเรียน:
-             {student_answer}
-             
-             เกณฑ์การให้คะแนน:
-             {criteria_text}
-             
-             ภาษาที่ใช้ในการให้ feedback: {language}
-             
-             กรุณาให้คะแนนและ feedback ในรูปแบบ JSON ดังนี้:
-             {{
-                 "criteria_scores": {{"ชื่อเกณฑ์": คะแนน}},
-                 "total_score": คะแนนรวม,
-                 "feedback": "คำแนะนำโดยละเอียด",
-                 "confidence_score": ค่าความเชื่อมั่น (0-1)
-             }}""")
-        ])
+        # ปรับปรุง prompt ให้เน้นย้ำเรื่องรูปแบบ JSON
+        prompt = f"""คูณเป็นผู้เชี่ยวชาญในการตรวจข้อสอบ ให้ตรวจและให้คะแนนตามเกณฑ์ที่กำหนด
         
-        return prompt.format()
+        เกณฑ์การให้คะแนน:
+        {criteria_text}
+        
+        คำตอบอ้างอิง:
+        {reference_answer}
+        
+        คำตอบของนักเรียน:
+        {student_answer}
+        
+        คำแนะนำสำคัญ:
+        1. กรุณาตรวจให้คะแนนเพียงครั้งเดียว
+        2. ตอบกลับมาในรูปแบบ JSON หนึ่งชุดเท่านั้น
+        3. ห้ามมีข้อความอื่นใดนอกเหนือจาก JSON
+        4. ใช้รูปแบบด้านล่างนี้อย่างเคร่งครัด:
+        
+        {{
+            "criteria_scores": {{
+                "<ชื่อเกณฑ์>": <คะแนน(ตัวเลข)>,
+            }},
+            "total_score": <คะแนนรวม(ตัวเลข)>,
+            "feedback": "<คำแนะนำเป็นภาษา{language}>",
+            "confidence_score": <ความมั่นใจ(0-1)>
+        }}
+        """
+        
+        return prompt
+
+    async def validate_grading_result(
+        self,
+        result: GradingResult,
+        criteria: List[GradingCriteria]
+    ) -> bool:
+        """
+        ตรวจสอบความถูกต้องของผลการให้คะแนน
+        
+        Args:
+            result: ผลการให้คะแนนที่ได้จาก LLM
+            criteria: เกณฑ์การให้คะแนนที่ใช้
+            
+        Returns:
+            True ถ้าผลลัพธ์ถูกต้อง, False ถ้าไม่ถูกต้อง
+        """
+        try:
+            # ตรวจสอบว่ามีคะแนนครบทุกเกณฑ์
+            expected_criteria = {c.name for c in criteria}
+            if set(result.criteria_scores.keys()) != expected_criteria:
+                logger.error("Missing criteria scores")
+                return False
+            
+            # ตรวจสอบช่วงคะแนนรวม
+            max_total = sum(c.max_score * c.weight for c in criteria)
+            if not (0 <= result.total_score <= max_total):
+                logger.error(f"Total score {result.total_score} out of range [0, {max_total}]")
+                return False
+            
+            # ตรวจสอบคะแนนแต่ละเกณฑ์
+            for criterion in criteria:
+                score = result.criteria_scores.get(criterion.name, 0)
+                if not (0 <= score <= criterion.max_score):
+                    logger.error(f"Score for {criterion.name} out of range [0, {criterion.max_score}]")
+                    return False
+            
+            # ตรวจสอบ confidence score
+            if not (0 <= result.confidence_score <= 1):
+                logger.error(f"Confidence score {result.confidence_score} out of range [0, 1]")
+                return False
+            
+            return True
+
+        except Exception as e:
+            logger.error(f"Error validating grading result: {str(e)}")
+            return False
 
     async def grade_answer(
         self,
@@ -77,11 +118,8 @@ class GradingService:
         criteria: List[GradingCriteria],
         language: str = "th"
     ) -> GradingResult:
-        """
-        ตรวจให้คะแนนคำตอบของนักเรียนโดยใช้ LLaMA
-        """
+        """ตรวจให้คะแนนคำตอบและจัดการผลลัพธ์อย่างระมัดระวัง"""
         try:
-            # create grading prompt
             prompt = await self.create_grading_prompt(
                 criteria=criteria,
                 reference_answer=reference_answer,
@@ -89,58 +127,82 @@ class GradingService:
                 language=language
             )
             
-            # เรียกใช้ Llama
-            response = await self.llm_service.generate_response(
-                prompt=prompt,
-                temperature=0.1, 
-            )
+            # เรียกใช้ LLM ในการประมวลผลคำตอบ
+            response = await self.llm_service.generate_response(prompt)
             
-            # แปลงคำตอบจาก LLaMA ให้เป็น JSON
             try:
-                grading_result = json.loads(response["content"])
-            except json.JSONDecodeError:
-                # ถ้าแปลง JSON ให้ลองทำความสะอาดข้อมูลก่อน
-                cleaned_content = response["content"].strip()
-                # หา JSON block แรกที่เจอ
-                start = cleaned_content.find("{")
-                end = cleaned_content.rfind("}")
-                grading_data = cleaned_content[start:end]
-            return GradingResult(
-                **grading_data,
-                grading_time=datetime.nom(),
-                evaluator_id="llama-3.2-typhoon22-3b"
-            )
+                content = response['content'].strip()
+                logger.debug(f"Raw LLM response: {content}")
+                
+                # หาและแยก JSON ชุดแรกที่สมบูรณ์
+                json_start = content.find('{')
+                if json_start == -1:
+                    raise ValueError("No JSON object found in response")
+                
+                # นับวงเล็บปีกกาเพื่อหาจุดสิ้นสุด JSON ที่สมบูรณ์
+                brace_count = 0
+                json_end = -1
+                
+                for i in range(json_start, len (content)):
+                    if content[i] == '{':
+                        brace_count += 1
+                    elif content[i] == '}':
+                        brace_count -= 1
+                        if brace_count == 0:
+                            json_end = i
+                            break
+                
+                if json_end == -1:
+                    raise ValueError("Could no found complete JSON object")
+                
+                # แยกเฉพาะ JSON ชุดแรก
+                json_text = content[json_start:json_end + 1]
+                logger.debug(f"Extracted JSON: {json_text}")
+                
+                try:
+                    grading_data = json.loads(json_text)
+                    
+                    # ตรวจสอบโครงสร้างและประเ๓ทข้อมูล
+                    self._validate_grading_data(grading_data)
+                    
+                    # สร้างและตรวจสอบผลลัพธ์
+                    result = GradingResult(
+                        **grading_data,
+                        grading_time=datetime.now(),
+                        evaluator_id="Llama-3.2-3B-Instruct-Q4_K_M.gguf"
+                    )
+                    
+                    if not await self.validate_grading_result(result, criteria):
+                        raise ValueError("Invalid grading result")
+                    
+                    return result
+                
+                except json.JSONDecodeError as e:
+                    logger.error(f"Error parsing JSON: {str(e)}")
+                    logger.error(f"Attempted to parse: {json_text}")
+                    raise ValueError(f"Invalid JSON format: {str(e)}")
+            
+            except Exception as e:
+                logger.error(f"Error processing LLM response: {str(e)}")
+                raise
         
         except Exception as e:
             logger.error(f"Error in grading process: {str(e)}")
             raise
-
-    async def validate_grading_result(
-        self,
-        result: GradingResult,
-        criteria: List[GradingCriteria]
-    ) -> bool:
-        """Validate grading results against criteria"""
-        try:
-            # Check if all criteria are graded
-            graded_criteria = set(result.criteria_scores.keys())
-            expected_criteria = set(c.name for c in criteria)
-            if graded_criteria != expected_criteria:
-                return False
-            
-            # Validate score ranges
-            total_max_score = sum(c.max_score * c.weight for c in criteria)
-            if result.total_score < 0 or result.total_score > total_max_score:
-                return False
-                
-            # Validate individual criteria scores
-            for criterion in criteria:
-                score = result.criteria_scores.get(criterion.name, 0)
-                if score < 0 or score > criterion.max_score:
-                    return False
-            
-            return True
-
-        except Exception as e:
-            logger.error(f"Error validating grading result: {str(e)}")
-            return False
+    
+    def _validate_grading_data(self, data: Dict) -> None:
+        """ตรวจสอบความถูกต้องของข้อมูลทีการให้คะแนน"""
+        required_fields = {'criteria_scores', 'total_score', 'feedback', 'confidence_score'}
+        missing_fields = required_fields - set(data.keys())
+        if missing_fields:
+            raise ValueError(f"Missing required fields: {missing_fields}")
+        
+        # ตรวจสอบประเภทของข้อมูล
+        if not isinstance(data['criteria_scores'], dict):
+            raise ValueError("criteria_scores must be an object")
+        if not isinstance(data['total_score'], (int, float)):
+            raise ValueError("total_score must be a number")
+        if not isinstance(data['feedback'], str):
+            raise ValueError("feedback must be a string")
+        if not isinstance(data['confidence_score'], (int, float)):
+            raise ValueError("confidence_score must be a number")

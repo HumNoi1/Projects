@@ -18,58 +18,31 @@ class DocumentProcessor:
         )
         self.embedding_service = EmbeddingService()
         self.db_manager = db_manager
-    
-    async def process_document(
-        self,
-        content: str,
-        metadata: Dict[str, Any]
-    ) -> List[Document]:
-        """แบ่งเอกสารเป็นชิ้นส่วนที่เหมาะสมสำหรับการประมวลผล
-        Args:
-            content: เนื้อหาเอกสาร
-            metadata: ข้อมูล metadata ที่เกี่ยวข้อง
-        
-        Returns:
-            List[Document]: รายการของ Document object ที่แบ่งแล้ว
-        """
 
-        try:
-            # clean data
-            cleaned_content = self._clean_text(content)
-            
-            # create document object
-            doc = Document(page_content=cleaned_content, metadata=metadata)
-            
-            #split document into chunks
-            documents = self.text_splitter.split_documents([doc])
-            
-            return documents
+    async def process_document(self, content: str) -> List[Document]:
+        """แยกเอกสารเป็น chunks"""
+        # ทำความสะอาดข้อความก่อน
+        cleaned_content = self._clean_text(content)
         
-        except Exception as e:
-            logger.error(f"Error in document processing pipeline: {str(e)}")
-            raise
-
-    async def get_db(self):
-        """Get database connection"""
-        if self.db_manager:
-            return self.db_manager
-        return await get_milvus()
+        # แยกเอกสารเป็น chunks
+        chunks = self.text_splitter.create_documents([cleaned_content])
+        return chunks
 
     async def process_and_embed_documents(
         self,
         content: str,
-        metadata: Dict[Any, Any]  
+        metadata: Dict[Any, Any]
     ) -> Dict[str, Any]:
-        """Process and create embed documents"""
+        """Process และสร้าง embeddings สำหรับเอกสาร"""
         try:
-            #process document into chunks
-            chunks = await self.process_and_embed_documents(content, metadata)
+            # แยกเอกสารเป็น chunks
+            chunks = await self.process_document(content)
             
-            #create embeddings
+            # สร้าง embeddings
             texts = [chunk.page_content for chunk in chunks]
-            embedding = await self.embedding_service.create_embeddings(texts)
+            embeddings = await self.embedding_service.create_embeddings(texts)
             
-            #store embeddings with metadata
+            # เตรียม metadata สำหรับแต่ละ chunk
             chunk_metadata = [
                 {
                     **metadata,
@@ -79,8 +52,9 @@ class DocumentProcessor:
                 for i in range(len(chunks))
             ]
             
+            # เก็บ embeddings พร้อม metadata
             embedding_ids = await self.embedding_service.store_embeddings(
-                embedding, chunk_metadata
+                embeddings, chunk_metadata
             )
             
             return {
@@ -94,7 +68,7 @@ class DocumentProcessor:
             raise
 
     def _clean_text(self, text: str) -> str:
-        """Clean and normalize text content"""
-        # Remove excessive whitespace
-        text = " ".join(text.split())      
+        """ทำความสะอาดและ normalize เนื้อหาข้อความ"""
+        # ลบช่องว่างที่ไม่จำเป็น
+        text = " ".join(text.split())
         return text
