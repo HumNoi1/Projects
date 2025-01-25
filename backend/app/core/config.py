@@ -14,7 +14,11 @@ class Settings(BaseSettings):
     LLM_N_CTX: int = 4096     # context window size
     LLM_N_BATCH: int = 512    # batch size for processing
     LLM_N_THREADS: int = 4    # CPU threads to use
-    LLM_N_GPU_LAYERS: int = 32  # GPU layers (ถ้ามี GPU)
+    LLM_N_GPU_LAYERS: int = 35  # GPU layers (ถ้ามี GPU)
+    
+    # GPU Configuration
+    CUDA_DEVICE: int = 0
+    GPU_MEMORY_UTILIZATION: float = 0.8
 
     class Config:
         env_file = ".env"
