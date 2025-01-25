@@ -34,10 +34,10 @@ def initialize_llama(model_path):
             # สำหรับ RTX 3050 4GB เราจะใช้การตั้งค่าที่ประหยัด memory
             llm = Llama(
                 model_path=model_path,
-                n_ctx=1024,
-                n_batch=256,
+                n_ctx=2048,
+                n_batch=512,
                 n_threads=6,
-                n_gpu_layers=32,        # เพิ่มจำนวน layers ที่จะรันบน GPU
+                n_gpu_layers=-1,        # เพิ่มจำนวน layers ที่จะรันบน GPU
                 main_gpu=0,
                 offload_kv=True,        # เพิ่มตัวเลือกนี้เพื่อ offload KV cache ไปยัง GPU
                 gpu_layers=[0,1],       # ระบุ layers ที่จะรันบน GPU
