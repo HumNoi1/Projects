@@ -1,12 +1,16 @@
-from llama_cpp import Llama
-import os
+from pyexpat import model
 import torch
 
-# ทดสอบการโหลดโมเดลด้วย GPU
-llm = Llama(
-    model_path="models/Llama-3.2-3B-Instruct-Q4_K_M.gguf",
-    n_gpu_layers=-1,  # ใช้ทุก layer บน GPU
-    verbose=True
-)
+# ตรวจสอบว่า GPU พร้อมใช้งานหรือไม่
+if torch.cuda.is_available():
+    print("GPU is available")
+    # ตรวจสอบว่าโมเดลถูกโหลดบน GPU หรือไม่
+    device = torch.device("cuda")
+    print(f"Using device: {device}")
+else:
+    print("GPU is not available, using CPU instead")
+    device = torch.device("cpu")
+    print(f"Using device: {device}")
 
-# ควรเห็น log การทำงานที่แสดงการใช้ CUDA/cuBLAS
+# ตรวจสอบว่าโมเดลถูกโหลดบน GPU หรือไม่
+model.to(device)
