@@ -2,9 +2,8 @@ from datetime import datetime
 import json
 import logging
 from typing import List, Dict, Any
-from urllib import response
-from app.models.grading import GradingCriteria, GradingResult
-from app.services.llm_service import LLMService
+from app.models.grading import GradingCriteria, GradingResult  # แก้ไขการ import
+from .llm_service import LMStudioService
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +17,7 @@ class GradingService:
         """
         เริ่มต้นบริการตรวจให้คะแนนโดยสร้าง instance ของ LLMService
         """
-        self.llm_service = LLMService()
+        self.llm_service = LMStudioService()
 
     async def create_grading_prompt(
         self,
@@ -118,77 +117,33 @@ class GradingService:
         criteria: List[GradingCriteria],
         language: str = "th"
     ) -> GradingResult:
-        """ตรวจให้คะแนนคำตอบและจัดการผลลัพธ์อย่างระมัดระวัง"""
         try:
-            prompt = await self.create_grading_prompt(
-                criteria=criteria,
+            criteria_dicts = [c.model_dump() for c in criteria]
+            
+            prompt = self.llm_service.create_grading_prompt(
                 reference_answer=reference_answer,
                 student_answer=student_answer,
+                criteria=criteria_dicts,
                 language=language
             )
             
-            # เรียกใช้ LLM ในการประมวลผลคำตอบ
-            response = await self.llm_service.generate_response(prompt)
+            response_text = await self.llm_service.generate_completion(prompt)
             
             try:
-                content = response['content'].strip()
-                logger.debug(f"Raw LLM response: {content}")
-                
-                # หาและแยก JSON ชุดแรกที่สมบูรณ์
-                json_start = content.find('{')
-                if json_start == -1:
-                    raise ValueError("No JSON object found in response")
-                
-                # นับวงเล็บปีกกาเพื่อหาจุดสิ้นสุด JSON ที่สมบูรณ์
-                brace_count = 0
-                json_end = -1
-                
-                for i in range(json_start, len (content)):
-                    if content[i] == '{':
-                        brace_count += 1
-                    elif content[i] == '}':
-                        brace_count -= 1
-                        if brace_count == 0:
-                            json_end = i
-                            break
-                
-                if json_end == -1:
-                    raise ValueError("Could no found complete JSON object")
-                
-                # แยกเฉพาะ JSON ชุดแรก
-                json_text = content[json_start:json_end + 1]
-                logger.debug(f"Extracted JSON: {json_text}")
-                
-                try:
-                    grading_data = json.loads(json_text)
-                    
-                    # ตรวจสอบโครงสร้างและประเ๓ทข้อมูล
-                    self._validate_grading_data(grading_data)
-                    
-                    # สร้างและตรวจสอบผลลัพธ์
-                    result = GradingResult(
-                        **grading_data,
-                        grading_time=datetime.now(),
-                        evaluator_id="Llama-3.2-3B-Instruct-Q4_K_M.gguf"
-                    )
-                    
-                    if not await self.validate_grading_result(result, criteria):
-                        raise ValueError("Invalid grading result")
-                    
-                    return result
-                
-                except json.JSONDecodeError as e:
-                    logger.error(f"Error parsing JSON: {str(e)}")
-                    logger.error(f"Attempted to parse: {json_text}")
-                    raise ValueError(f"Invalid JSON format: {str(e)}")
+                result = json.loads(response_text)
+            except json.JSONDecodeError:
+                logger.error("Invalid JSON response from LLM")
             
-            except Exception as e:
-                logger.error(f"Error processing LLM response: {str(e)}")
-                raise
+            return GradingResult(
+                **result,
+                grading_time=datetime.now(),
+                evaluator_id="lm-studio-grader"
+            )
         
         except Exception as e:
-            logger.error(f"Error in grading process: {str(e)}")
+            logger.error(f"Error grading answer: {str(e)}")
             raise
+
     
     def _validate_grading_data(self, data: Dict) -> None:
         """ตรวจสอบความถูกต้องของข้อมูลทีการให้คะแนน"""
