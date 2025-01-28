@@ -2,20 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+.glass-card {
+  @apply bg-white/60 backdrop-blur-xl rounded-xl border border-gray-200/50 shadow-sm;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+.hover-card {
+  @apply transition-all duration-200 hover:shadow-md hover:bg-white/70;
 }
