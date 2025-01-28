@@ -1,37 +1,27 @@
-# app/core/config.py
+from pydantic_settings import BaseSettings
 from typing import Optional
-from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
-    # API Configuration
+    # Existing settings
     API_V1_STR: str = "/api/v1"
     PROJECT_NAME: str = "Auto Grading System"
     
     # LM Studio Configuration
-    LMSTUDIO_API_BASE: str = "http://127.0.0.1:1234"
+    LMSTUDIO_API_BASE: str = "http://localhost:1234/v1"
+    LLM_TEMPERATURE: float = 0.7
+    LLM_TOP_P: float = 0.95
+    LLM_MAX_TOKENS: int = 2048
     
-    # Database Configuration
+    # Milvus Configuration
     MILVUS_HOST: str = "localhost"
     MILVUS_PORT: int = 19530
     
-    # Supabase Configuration - จำเป็นต้องมีค่าเหล่านี้
-    SUPABASE_URL: str
-    SUPABASE_KEY: str
+    # Supabase Configuration (for testing)
+    SUPABASE_URL: str = "https://test.supabase.co"
+    SUPABASE_KEY: str = "test-key"
     
-    # Model Configuration
-    MODEL_NAME: Optional[str] = "bartowski/Llama-3.2-3B-Instruct-GGUF"
-    DEVICE: Optional[str] = "cuda"
-    MAX_LENGTH: Optional[int] = 512
-    
-    # LM Studio Configuration
-    TEMPERATURE: float = 0.7
-    TOP_P: float = 0.95
-    MAX_TOKENS: int = 4096
-    
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        extra="allow"  # อนุญาตให้มี extra fields
-    )
+    class Config:
+        env_file = ".env"
+        case_sensitive = True
 
 settings = Settings()

@@ -1,68 +1,119 @@
 from datetime import datetime
-import json
 import logging
-from typing import List, Dict, Any
-from app.models.grading import GradingCriteria, GradingResult  # แก้ไขการ import
-from .llm_service import LMStudioService
+from typing import List, Dict, Any, Optional
+
+from app.models.grading import (
+    GradingCriteria,
+    GradingResult,
+    GradingRequest,
+    GradingStatusEnum
+)
+from app.services.llm_service import LLMService
+from app.services.document_processor import DocumentProcessor
 
 logger = logging.getLogger(__name__)
 
 class GradingService:
     """
-    บริการตรวจให้คะแนนที่ใช้ LLM ในการวิเคราะห์และประเมินคำตอบของนักเรียน
-    คลาสนี้จัดการการสร้าง prompt, การประมวลผลคำตอบจาก LLM, และการตรวจสอบความถูกต้องของผลลัพธ์
+    บริการจัดการการตรวจให้คะแนนที่ทำงานร่วมกับ LLM Service
+    
+    บริการนี้รับผิดชอบในการ:
+    1. ประสานงานระหว่าง Document Processor และ LLM Service
+    2. จัดการกระบวนการตรวจให้คะแนน
+    3. ตรวจสอบความถูกต้องของผลลัพธ์
+    4. จัดการกับข้อผิดพลาดที่อาจเกิดขึ้น
     """
 
     def __init__(self):
-        """
-        เริ่มต้นบริการตรวจให้คะแนนโดยสร้าง instance ของ LLMService
-        """
-        self.llm_service = LMStudioService()
+        # สร้าง instances ของ services ที่จำเป็น
+        self.llm_service = LLMService()
+        self.document_processor = DocumentProcessor()
 
-    async def create_grading_prompt(
+    async def prepare_content_for_grading(self, content: str, max_length: int = 2000) -> str:
+        try:
+            # ทำความสะอาดและแบ่งเนื้อหา
+            cleaned_content = await self.document_processor.process_document(content)
+            processed_content = " ".join(chunk.page_content for chunk in cleaned_content)
+            
+            if len(processed_content) > max_length:
+                # คำนวณความยาวที่จะตัดโดยคำนึงถึงความยาวของข้อความที่จะแทรก
+                truncate_message = "\n...[เนื้อหาถูกตัดให้สั้นลง]...\n"
+                remaining_length = max_length - len(truncate_message)
+                half_length = remaining_length // 2
+                
+                processed_content = (
+                    processed_content[:half_length] +
+                    truncate_message +
+                    processed_content[-half_length:]
+                )
+                
+            return processed_content
+                
+        except Exception as e:
+            logger.error(f"เกิดข้อผิดพลาดในการเตรียมเนื้อหา: {str(e)}")
+            raise
+
+    async def grade_answer(
         self,
-        criteria: List[GradingCriteria],
         reference_answer: str,
         student_answer: str,
-        language: str = "th"
-    ) -> str:
+        criteria: List[GradingCriteria],
+        language: str = "th",
+        retries: int = 2
+    ) -> GradingResult:
         """
-        สร้าง prompt ที่ชัดเจนสำหรับ LLM เพื่อให้ได้ผลลัพธ์ในรูปแบบ JSON ที่ถูกต้อง
+        Grades a student's answer using the specified criteria.
+        Includes retry logic and result validation to ensure reliable grading.
+
+        Args:
+            reference_answer: The reference answer to grade against
+            student_answer: The student's answer to grade
+            criteria: List of grading criteria to apply
+            language: Preferred language for feedback
+            retries: Number of retry attempts for failed grading
+            
+        Returns:
+            A validated GradingResult object
         """
-        criteria_text = "\n".join([
-            f"- {c.name} (คะแนนเต็ม: {c.max_score}, น้ำหนัก {c.weight}):\n {c.description}"
-            for c in criteria
-        ])
-        
-        # ปรับปรุง prompt ให้เน้นย้ำเรื่องรูปแบบ JSON
-        prompt = f"""คูณเป็นผู้เชี่ยวชาญในการตรวจข้อสอบ ให้ตรวจและให้คะแนนตามเกณฑ์ที่กำหนด
-        
-        เกณฑ์การให้คะแนน:
-        {criteria_text}
-        
-        คำตอบอ้างอิง:
-        {reference_answer}
-        
-        คำตอบของนักเรียน:
-        {student_answer}
-        
-        คำแนะนำสำคัญ:
-        1. กรุณาตรวจให้คะแนนเพียงครั้งเดียว
-        2. ตอบกลับมาในรูปแบบ JSON หนึ่งชุดเท่านั้น
-        3. ห้ามมีข้อความอื่นใดนอกเหนือจาก JSON
-        4. ใช้รูปแบบด้านล่างนี้อย่างเคร่งครัด:
-        
-        {{
-            "criteria_scores": {{
-                "<ชื่อเกณฑ์>": <คะแนน(ตัวเลข)>,
-            }},
-            "total_score": <คะแนนรวม(ตัวเลข)>,
-            "feedback": "<คำแนะนำเป็นภาษา{language}>",
-            "confidence_score": <ความมั่นใจ(0-1)>
-        }}
-        """
-        
-        return prompt
+        try:
+            # Prepare content for grading
+            processed_reference = await self.prepare_content_for_grading(
+                reference_answer
+            )
+            processed_student = await self.prepare_content_for_grading(
+                student_answer
+            )
+
+            # Attempt grading with retries
+            last_error = None
+            for attempt in range(retries + 1):
+                try:
+                    result = await self.llm_service.grade_answer(
+                        reference_answer=processed_reference,
+                        student_answer=processed_student,
+                        criteria=criteria,
+                        language=language
+                    )
+
+                    # Validate the result
+                    if await self.validate_grading_result(result, criteria):
+                        return result
+                    else:
+                        raise ValueError("Invalid grading result format")
+
+                except Exception as e:
+                    last_error = e
+                    logger.warning(
+                        f"Grading attempt {attempt + 1} failed: {str(e)}"
+                    )
+                    if attempt == retries:
+                        raise last_error
+
+            raise last_error
+
+        except Exception as e:
+            logger.error(f"Error in grading process: {str(e)}")
+            raise
 
     async def validate_grading_result(
         self,
@@ -70,94 +121,85 @@ class GradingService:
         criteria: List[GradingCriteria]
     ) -> bool:
         """
-        ตรวจสอบความถูกต้องของผลการให้คะแนน
-        
+        Performs comprehensive validation of a grading result.
+        Checks both format and logical consistency of the grades.
+
         Args:
-            result: ผลการให้คะแนนที่ได้จาก LLM
-            criteria: เกณฑ์การให้คะแนนที่ใช้
+            result: The grading result to validate
+            criteria: The criteria used for grading
             
         Returns:
-            True ถ้าผลลัพธ์ถูกต้อง, False ถ้าไม่ถูกต้อง
+            True if the result is valid, False otherwise
         """
         try:
-            # ตรวจสอบว่ามีคะแนนครบทุกเกณฑ์
-            expected_criteria = {c.name for c in criteria}
-            if set(result.criteria_scores.keys()) != expected_criteria:
-                logger.error("Missing criteria scores")
+            # Basic structure validation
+            if not all(hasattr(result, field) for field in [
+                'criteria_scores',
+                'total_score',
+                'feedback',
+                'confidence_score'
+            ]):
+                logger.error("Missing required fields in grading result")
                 return False
-            
-            # ตรวจสอบช่วงคะแนนรวม
-            max_total = sum(c.max_score * c.weight for c in criteria)
-            if not (0 <= result.total_score <= max_total):
-                logger.error(f"Total score {result.total_score} out of range [0, {max_total}]")
-                return False
-            
-            # ตรวจสอบคะแนนแต่ละเกณฑ์
+
+            # Validate criteria scores
             for criterion in criteria:
-                score = result.criteria_scores.get(criterion.name, 0)
-                if not (0 <= score <= criterion.max_score):
-                    logger.error(f"Score for {criterion.name} out of range [0, {criterion.max_score}]")
+                if criterion.name not in result.criteria_scores:
+                    logger.error(f"Missing score for criterion: {criterion.name}")
                     return False
-            
-            # ตรวจสอบ confidence score
-            if not (0 <= result.confidence_score <= 1):
-                logger.error(f"Confidence score {result.confidence_score} out of range [0, 1]")
+
+                score = result.criteria_scores[criterion.name]
+                if not (0 <= score <= criterion.max_score):
+                    logger.error(
+                        f"Invalid score range for {criterion.name}: {score}"
+                    )
+                    return False
+
+            # Validate total score
+            max_possible = sum(c.max_score * c.weight for c in criteria)
+            if not (0 <= result.total_score <= max_possible):
+                logger.error(
+                    f"Total score {result.total_score} exceeds maximum possible {max_possible}"
+                )
                 return False
-            
+
+            # Validate feedback
+            if not result.feedback or len(result.feedback.strip()) < 10:
+                logger.error("Feedback is too short or empty")
+                return False
+
+            # Validate confidence score
+            if not (0 <= result.confidence_score <= 1):
+                logger.error(
+                    f"Invalid confidence score: {result.confidence_score}"
+                )
+                return False
+
             return True
 
         except Exception as e:
             logger.error(f"Error validating grading result: {str(e)}")
             return False
 
-    async def grade_answer(
+    async def evaluate_grading_confidence(
         self,
-        reference_answer: str,
-        student_answer: str,
-        criteria: List[GradingCriteria],
-        language: str = "th"
-    ) -> GradingResult:
-        try:
-            criteria_dicts = [c.model_dump() for c in criteria]
-            
-            prompt = self.llm_service.create_grading_prompt(
-                reference_answer=reference_answer,
-                student_answer=student_answer,
-                criteria=criteria_dicts,
-                language=language
-            )
-            
-            response_text = await self.llm_service.generate_completion(prompt)
-            
-            try:
-                result = json.loads(response_text)
-            except json.JSONDecodeError:
-                logger.error("Invalid JSON response from LLM")
-            
-            return GradingResult(
-                **result,
-                grading_time=datetime.now(),
-                evaluator_id="lm-studio-grader"
-            )
+        result: GradingResult,
+        threshold: float = 0.8
+    ) -> bool:
+        """
+        Evaluates whether we can be confident in the grading result.
         
-        except Exception as e:
-            logger.error(f"Error grading answer: {str(e)}")
-            raise
-
-    
-    def _validate_grading_data(self, data: Dict) -> None:
-        """ตรวจสอบความถูกต้องของข้อมูลทีการให้คะแนน"""
-        required_fields = {'criteria_scores', 'total_score', 'feedback', 'confidence_score'}
-        missing_fields = required_fields - set(data.keys())
-        if missing_fields:
-            raise ValueError(f"Missing required fields: {missing_fields}")
-        
-        # ตรวจสอบประเภทของข้อมูล
-        if not isinstance(data['criteria_scores'], dict):
-            raise ValueError("criteria_scores must be an object")
-        if not isinstance(data['total_score'], (int, float)):
-            raise ValueError("total_score must be a number")
-        if not isinstance(data['feedback'], str):
-            raise ValueError("feedback must be a string")
-        if not isinstance(data['confidence_score'], (int, float)):
-            raise ValueError("confidence_score must be a number")
+        Args:
+            result: The grading result to evaluate
+            threshold: Minimum confidence threshold
+            
+        Returns:
+            True if the result meets confidence requirements
+        """
+        if result.confidence_score < threshold:
+            logger.warning(
+                f"Low confidence score: {result.confidence_score}"
+            )
+            return False
+            
+        return True

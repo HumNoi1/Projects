@@ -17,10 +17,8 @@ setup(
         "coverage>=6.0.0",
         "langchain>=0.3.15",
         "langchain-community>=0.3.15",
-        "langchain-huggingface>=0.1.2",
         "pymilvus>=2.3.3",
-        "supabase>=1.0.3",
-        "llama-cpp-python>=0.1.9",
-        "sentence-transformers"
+        "httpx",
     ],
+    python_requires=">=3.11",
 )
