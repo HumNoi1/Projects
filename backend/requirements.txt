@@ -1,19 +1,10 @@
-fastapi>=0.103.0
-uvicorn>=0.23.2
-python-dotenv>=1.0.0
-pydantic>=2.3.0
-pydantic-settings>=2.0.3
-pytest>=7.0.0
-pytest-cov>=3.0.0
-pytest-asyncio>=0.18.0
-asynctest>=0.13.0
-coverage>=6.0.0
-langchain>=0.3.15
-langchain-community>=0.3.15
-langchain-huggingface>=0.1.2
-langchain-core>=0.3.31
-pymilvus>=2.3.9
-supabase>=1.0.3
-sentence-transformers>=3.3.1
-transformers>=4.48.1
-httpx>=0.28.1
+# สำหรับการทดสอบ
+pytest
+pytest-asyncio
+pytest-cov
+
+# Database
+pydantic
+pydantic-settings
+pymilvus
+supabase

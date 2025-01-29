@@ -3,5 +3,3 @@ venv
 .venv
 .env
 .env.test
-Llama-3.2-3B-Instruct-Q4_K_M.gguf
-backend/.env
