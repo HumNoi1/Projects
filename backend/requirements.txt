@@ -6,5 +6,18 @@ pytest-cov
 # Database
 pydantic
 pydantic-settings
+pytest-benchmark
+pytest-asyncio
 pymilvus
-supabase
+supabase 
+
+# FastAPI
+fastapi
+
+# Embedding Model
+sentence_transformers
+
+# PDF
+fpdf
+
+fitz

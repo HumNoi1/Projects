@@ -1,22 +1,27 @@
+# tests/conftest.py
 import pytest
 from typing import AsyncGenerator
 from app.db.base import SupabaseManager, MilvusManager
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 async def supabase_client() -> AsyncGenerator[SupabaseManager, None]:
+    """Fixture สำหรับการจัดการ Supabase connection ในการทดสอบ"""
     manager = SupabaseManager()
     await manager.connect()
     yield manager
-    await manager.disconnect()
+    if manager.client is not None:
+        await manager.disconnect()
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 async def milvus_client() -> AsyncGenerator[MilvusManager, None]:
+    """Fixture สำหรับการจัดการ Milvus connection ในการทดสอบ"""
     manager = MilvusManager()
     await manager.connect()
     yield manager
     await manager.disconnect()
 
-@pytest.fixture(scope="function")
-async def application_context(supabase_client, milvus_client):
-    """Provide application context with database connections"""
-    yield
+@pytest.fixture(autouse=True)
+def setup_test_env():
+    """Setup สภาพแวดล้อมสำหรับการทดสอบ"""
+    from dotenv import load_dotenv
+    load_dotenv(".env.test")
