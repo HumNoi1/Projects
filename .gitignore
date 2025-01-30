@@ -1,6 +1,18 @@
-volumes
-venv
-.venv
-.env
+# .gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.so
+
+# Next.js
+.next/
+node_modules/
+*.log
+.env*.local
 .env.test
-__pycache__
+
+# IDE
+.vscode/
+.idea/

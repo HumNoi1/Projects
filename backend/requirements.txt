@@ -19,5 +19,4 @@ sentence_transformers
 
 # PDF
 fpdf
-
 fitz
