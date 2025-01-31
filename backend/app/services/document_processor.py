@@ -49,7 +49,8 @@ class DocumentProcessor:
             # บันทึก embeddings ลงใน Milvus
             embedding_ids = await self.embedding_service.store_embeddings(
                 embeddings,
-                metadata_list
+                metadata_list,
+                texts
             )
 
             return {

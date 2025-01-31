@@ -1,6 +1,6 @@
 # app/services/pdf_service.py
 from typing import List, Dict, Any
-import fitz  # PyMuPDF
+import fitz
 import logging
 from pathlib import Path
 

@@ -1,52 +1,25 @@
 # app/services/embedding_service.py
 from typing import List, Dict, Any, Optional
-import numpy as np
-from sentence_transformers import SentenceTransformer
 from pymilvus import Collection, FieldSchema, CollectionSchema, DataType, utility
 import logging
 from app.core.config import settings
-
-logger = logging.getLogger(__name__)
+from .lmstudio_client import LMStudioClient
 
 class EmbeddingService:
-    """
-    บริการสร้างและจัดการ embeddings โดยใช้ SentenceTransformer และ Milvus
-    
-    คลาสนี้รับผิดชอบ:
-    1. การสร้าง embeddings จากข้อความโดยใช้ SentenceTransformer
-    2. การจัดการ collection ใน Milvus
-    3. การจัดเก็บและค้นหา embeddings
-    """
-
     def __init__(self):
-        # กำหนดค่าพื้นฐานสำหรับ embedding model
-        self.model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+        self.lmstudio_client = LMStudioClient()
         self.collection_name = "document_embeddings"
-        self.dimension = 384  # ขนาดของ vector จาก all-MiniLM-L6-v2
+        self.dimension = settings.EMBEDDING_DIMENSION
         self._collection: Optional[Collection] = None
 
     async def create_embeddings(self, texts: List[str]) -> List[List[float]]:
         """
-        สร้าง embeddings จากรายการข้อความ
-        
-        Args:
-            texts: รายการข้อความที่ต้องการสร้าง embeddings
-            
-        Returns:
-            รายการของ embeddings vectors
+        สร้าง embeddings จากรายการข้อความโดยใช้ LM-Studio
         """
         try:
-            # แปลงข้อความเป็น embeddings
-            embeddings = self.model.encode(
-                texts,
-                normalize_embeddings=True,  # Normalize vectors ให้มีขนาด = 1
-                show_progress_bar=True,     # แสดง progress bar สำหรับข้อความจำนวนมาก
-                batch_size=32               # ประมวลผลครั้งละ 32 ข้อความ
-            )
+            embeddings = await self.lmstudio_client.create_embeddings(texts)
+            return embeddings
             
-            # แปลง numpy arrays เป็น list of lists
-            return embeddings.tolist()
-        
         except Exception as e:
             logger.error(f"Error creating embeddings: {str(e)}")
             raise

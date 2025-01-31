@@ -10,6 +10,8 @@ __pycache__/
 .next/
 node_modules/
 *.log
+backend/.env
+.evn
 .env*.local
 .env.test
 

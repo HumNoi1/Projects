@@ -1,8 +1,8 @@
-# สำหรับการทดสอบ
+# Testing
 pytest
 pytest-asyncio
 pytest-cov
-
+PyMuPDF>=1.23.26
 # Database
 pydantic
 pydantic-settings
@@ -10,13 +10,10 @@ pytest-benchmark
 pytest-asyncio
 pymilvus
 supabase 
-
 # FastAPI
 fastapi
-
 # Embedding Model
 sentence_transformers
-
 # PDF
 fpdf
 fitz

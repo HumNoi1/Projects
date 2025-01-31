@@ -153,7 +153,7 @@ class TestPDFProcessing:
             }
             
             result = await processor.process_pdf(
-                Path(upload_file.filename),
+                Path(sample_pdf.name),
                 metadata
             )
             
