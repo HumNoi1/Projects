@@ -5,15 +5,28 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { PlusIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { ClassFormData } from '@/types/class'
+import { createClass } from '@/lib/api/classes'
 
 interface Student {
   email: string;
   name: string;
 }
 
-const ClassForm = () => {
+export default function ClassForm() {
   const router = useRouter()
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [students, setStudents] = useState<Student[]>([{ email: '', name: '' }])
+
+  const [formData, setFormData] = useState<ClassFormData>({
+    name: '',
+    subject: '',
+    grade: '',
+    academic_year: new Date().getFullYear().toString(),
+    description: '',
+    students: [{ email: '', name: '' }]
+  })
   
   const handleAddStudent = () => {
     setStudents([...students, { email: '', name: '' }])
@@ -31,8 +44,19 @@ const ClassForm = () => {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // TODO: Implement class creation logic
-    router.push('/classes')
+    setLoading(true)
+    setError(null)
+
+    try {
+      await createClass(formData)
+      router.push('/classes')
+      router.refresh()
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (error) {
+      setError('Failed to create class')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -47,8 +71,9 @@ const ClassForm = () => {
             <input
               type="text"
               required
+              value={formData.name}
+              onChange={(e) => setFormData({...formData, name: e.target.value})}
               className="w-full px-4 py-2 rounded-lg border bg-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., Mathematics 10-A"
             />
           </div>
           <div>
@@ -167,5 +192,3 @@ const ClassForm = () => {
     </form>
   )
 }
-
-export default ClassForm
