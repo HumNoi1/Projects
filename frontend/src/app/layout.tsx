@@ -1,27 +1,31 @@
-// components/providers.tsx
-'use client'
+// frontend/app/layout.tsx
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import Sidebar from "@/components/Sidebar";
+import "./globals.css";
 
-import { useState } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { type ReactNode } from 'react'
+const inter = Inter({ subsets: ["latin"] });
 
-const Layout = ({ children }: { children: ReactNode }) => {
-  // Create a new QueryClient instance for React Query
-  const [queryClient] = useState(() => new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: 60 * 1000, // Data remains fresh for 1 minute
-        refetchOnWindowFocus: false,
-        retry: 1,
-      },
-    },
-  }))
+export const metadata: Metadata = {
+  title: "Grading with LLM",
+  description: "Automated grading system powered by LLM",
+};
 
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
-  )
+    <html lang="en">
+      <body className={inter.className}>
+        <div className="flex h-screen">
+          <Sidebar />
+          <main className="flex-1 overflow-y-auto p-8">
+            {children}
+          </main>
+        </div>
+      </body>
+    </html>
+  );
 }
-
-export default Layout;
