@@ -4,27 +4,24 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { PDFViewer } from '@/components/grading/PDFViewer';
-import { GradingResult } from '@/components/grading/GradingResult';
 import { Loader2 } from 'lucide-react';
+import { GradingResult } from '@/components/grading/GradingResult';
 
 export default function GradingPage() {
   const [teacherFile, setTeacherFile] = useState<File | null>(null);
   const [studentFile, setStudentFile] = useState<File | null>(null);
   const [isGrading, setIsGrading] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [gradingResult, setGradingResult] = useState<any>(null);
+  const [gradingResult, setGradingResult] = useState<{ score: number; feedback: string } | null>(null);
 
   const handleStartGrading = async () => {
     if (!teacherFile || !studentFile) return;
 
     setIsGrading(true);
     try {
-      // สร้าง FormData สำหรับส่งไฟล์
       const formData = new FormData();
       formData.append('teacher_file', teacherFile);
       formData.append('student_file', studentFile);
 
-      // ส่งไฟล์ไปยัง API
       const response = await fetch('/api/v1/grading', {
         method: 'POST',
         body: formData,
@@ -47,11 +44,15 @@ export default function GradingPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <PDFViewer
           title="Teacher's Answer Key"
-          onFileSelect={(file) => setTeacherFile(file)}
+          fileType="teacher"
+          assignmentId="your-assignment-id" // ควรรับมาจาก props หรือ params
+          onFileUpload={(file: File) => setTeacherFile(file)}
         />
         <PDFViewer
           title="Student's Submission"
-          onFileSelect={(file) => setStudentFile(file)}
+          fileType="student"
+          assignmentId="your-assignment-id"
+          onFileUpload={(file: File) => setStudentFile(file)}
         />
       </div>
 
@@ -70,8 +71,7 @@ export default function GradingPage() {
         <GradingResult
           score={gradingResult.score}
           feedback={gradingResult.feedback}
-          similarities={gradingResult.similarities}
-        />
+          similarities={[]}        />
       )}
     </div>
   );
