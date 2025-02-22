@@ -1,5 +1,6 @@
 # app/services/embedding_service.py
 from typing import List, Dict, Any, Optional
+from fastapi import logger
 from pymilvus import Collection, FieldSchema, CollectionSchema, DataType, utility
 import logging
 from app.core.config import settings
