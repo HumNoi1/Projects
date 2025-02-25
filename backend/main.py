@@ -1,26 +1,39 @@
-# backend/main.py
+# main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-from app.api.v1.endpoints import grading, document, health, batch_grading
+import logging
+from app.api.v1.router import api_router
 from app.core.config import settings
+
+# Setup logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title=settings.PROJECT_NAME)
 
-# ตั้งค่า CORS
+# Set up CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # URL ของ Frontend (อาจเปลี่ยนในสภาพแวดล้อมจริง)
+    allow_origins=["http://localhost:3000"],  # Frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# รวม router จาก endpoints ต่างๆ
-app.include_router(grading.router, prefix=settings.API_V1_STR + "/grading", tags=["grading"])
-app.include_router(document.router, prefix=settings.API_V1_STR + "/document", tags=["documents"])
-app.include_router(health.router, prefix=settings.API_V1_STR + "/health", tags=["health"])
-app.include_router(batch_grading.router, prefix=settings.API_V1_STR + "/batch-grading", tags=["batch-grading"])
+# Include API router
+app.include_router(api_router, prefix=settings.API_V1_STR)
+
+@app.on_event("startup")
+async def startup_event():
+    logger.info("Starting up the application")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    logger.info("Shutting down the application")
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)  # เปลี่ยนเป็น 0.0.0.0 เพื่อให้เข้าถึงได้จากภายนอก
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

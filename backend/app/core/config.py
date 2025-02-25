@@ -1,7 +1,10 @@
 # app/core/config.py
-from http.client import REQUEST_TIMEOUT
 from pydantic_settings import BaseSettings
 from typing import Optional
+from dotenv import load_dotenv
+
+# Load .env file
+load_dotenv()
 
 class Settings(BaseSettings):
     # Database Configuration
@@ -12,11 +15,15 @@ class Settings(BaseSettings):
     
     # LM-Studio Configuration
     LMSTUDIO_API_BASE: str
-    EMBEDDING_MODEL_NAME: str  # เพิ่มตัวแปรนี้
+    EMBEDDING_MODEL_NAME: str
     LLM_MODEL_NAME: str
     MAX_TOKENS: int = 4096
     TEMPERATURE: float = 0.7
-    EMBEDDING_DIMENSION: int = 1024
+    
+    # LlamaIndex Configuration
+    EMBEDDING_DIMENSION: int = 1536
+    CHUNK_SIZE: int = 1000
+    CHUNK_OVERLAP: int = 200
     
     # API Configuration
     API_V1_STR: str = "/api/v1"

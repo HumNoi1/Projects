@@ -12,7 +12,7 @@ const Sidebar = () => {
     { href: "/", label: "Home", icon: Home },
     { href: "/class-student", label: "Class Student", icon: Users },
     { href: "/grading", label: "Grading Student", icon: GraduationCap },
-    { href: "/batch", label: "Batch Grading", icon: GraduationCap },
+    { href: "/batch-grading", label: "Batch Grading", icon: GraduationCap },
   ];
 
   return (

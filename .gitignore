@@ -11,7 +11,7 @@ __pycache__/
 node_modules/
 *.log
 backend/.env
-.evn
+.env
 .env*.local
 .env.test
 
