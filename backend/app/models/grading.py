@@ -9,4 +9,4 @@ class GradingRequest(BaseSchema):
 
 class GradingResponse(BaseSchema):
     success: bool
-    grading_result: Dict[str, Any]
+    grading_result: dict

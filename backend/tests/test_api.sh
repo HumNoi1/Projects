@@ -29,4 +29,7 @@ curl -s -X POST "${BASE_URL}/grading/grade/" \
     }
   }'
 
+echo "Testing simple endpoint..."
+curl -s -X POST "${BASE_URL/grading/test}"
+
 echo "API tests completed."
