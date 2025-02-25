@@ -29,11 +29,13 @@ def test_upload_pdf_endpoint():
             
             # Create test request with file
             with open(temp_path, 'rb') as f:
-                response = client.post(
-                    "/api/v1/document/upload/pdf/",
-                    files={"file": ("test.pdf", f, "application/pdf")},
-                    params={"class_id": 1, "assignment_id": 2}
-                )
+                file_content = f.read()
+                
+            response = client.post(
+                "/api/v1/document/upload/pdf/",
+                files={"file": ("test.pdf", file_content, "application/pdf")},
+                params={"class_id": 1, "assignment_id": 2}
+            )
             
             # Verify
             assert response.status_code == 200
