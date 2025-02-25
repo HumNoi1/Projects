@@ -1,5 +1,6 @@
 from contextvars import ContextVar
 from typing import Union
+from venv import logger
 from .base import SupabaseManager, MilvusManager
 
 # Context variables for database connections
@@ -8,12 +9,12 @@ milvus_context: ContextVar[MilvusManager] = ContextVar("milvus")
 
 async def get_supabase() -> SupabaseManager:
     try:
-        return supabase_context.get()
-    except LookupError:
         manager = SupabaseManager()
         await manager.connect()
-        supabase_context.set(manager)
         return manager
+    except Exception as e:
+        logger.error(f"Error connecting to Supabase: {str(e)}")
+        raise
 
 async def get_milvus() -> MilvusManager:
     try:

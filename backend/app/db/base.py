@@ -26,6 +26,14 @@ class SupabaseManager(DatabaseManager):
         """สร้างการเชื่อมต่อกับ Supabase"""
         if not self.client:
             self.client = create_client(self.url, self.key)
+            # ทดสอบการเชื่อมต่อด้วย query ง่าย ๆ
+            try:
+                response = self.client.table('files').select('id').limit(1).execute()
+                # Check error
+                if hasattr(response, 'error') and response.error:
+                    raise Exception(f"Supabase connection error: {response.error}")
+            except Exception as e:
+                raise Exception(f"Supabase connection error: {str(e)}")
 
     async def disconnect(self) -> None:
         """ปิดการเชื่อมต่อกับ Supabase"""
