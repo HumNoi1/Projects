@@ -23,6 +23,18 @@ export default function Home() {
 
         <Card>
           <CardHeader>
+            <CardTitle>Batch Grading</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="mb-4">Grade multiple students at once with our batch grading feature.</p>
+            <Link href="/batch">
+              <Button>Batch Grading</Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
             <CardTitle>Class Management</CardTitle>
           </CardHeader>
           <CardContent>
