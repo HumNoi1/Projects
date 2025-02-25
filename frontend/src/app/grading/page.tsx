@@ -1,4 +1,4 @@
-// frontend/app/grading/page.tsx
+// frontend/src/app/grading/page.tsx
 'use client';
 
 import { useState } from 'react';
@@ -6,32 +6,45 @@ import { Button } from '@/components/ui/button';
 import { PDFViewer } from '@/components/grading/PDFViewer';
 import { Loader2 } from 'lucide-react';
 import { GradingResult } from '@/components/grading/GradingResult';
+import { GradingService } from '@/services/api';
 
 export default function GradingPage() {
   const [teacherFile, setTeacherFile] = useState<File | null>(null);
   const [studentFile, setStudentFile] = useState<File | null>(null);
   const [isGrading, setIsGrading] = useState(false);
-  const [gradingResult, setGradingResult] = useState<{ score: number; feedback: string } | null>(null);
+  const [gradingResult, setGradingResult] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // สร้าง ID สำหรับการทดสอบ (ในระบบจริงอาจดึงจาก URL params)
+  const assignmentId = "test-assignment-1";
 
   const handleStartGrading = async () => {
     if (!teacherFile || !studentFile) return;
 
     setIsGrading(true);
+    setError(null);
+    
     try {
-      const formData = new FormData();
-      formData.append('teacher_file', teacherFile);
-      formData.append('student_file', studentFile);
-
-      const response = await fetch('/api/v1/grading', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const result = await response.json();
-      setGradingResult(result);
+      // เรียกใช้ API เพื่อให้คะแนน
+      const result = await GradingService.gradeAssignment(
+        "Student answer extracted from PDF", // ในระบบจริงควรดึงข้อมูลจากไฟล์ที่อัปโหลดไว้
+        "Reference answer extracted from PDF", // ในระบบจริงควรดึงข้อมูลจากไฟล์ที่อัปโหลดไว้
+        {
+          "Content": {
+            "weight": 40,
+            "criteria": "Evaluates understanding of concepts"
+          },
+          "Clarity": {
+            "weight": 30,
+            "criteria": "Clear expression of ideas"
+          }
+        }
+      );
+      
+      setGradingResult(result.grading_result);
     } catch (error) {
-      console.error('Error grading files:', error);
-      // TODO: แสดง error message
+      console.error('Error grading assignments:', error);
+      setError(error instanceof Error ? error.message : 'An unknown error occurred');
     } finally {
       setIsGrading(false);
     }
@@ -45,16 +58,22 @@ export default function GradingPage() {
         <PDFViewer
           title="Teacher's Answer Key"
           fileType="teacher"
-          assignmentId="your-assignment-id" // ควรรับมาจาก props หรือ params
-          onFileUpload={(file: File) => setTeacherFile(file)}
+          assignmentId={assignmentId}
+          onFileUpload={(file) => setTeacherFile(file)}
         />
         <PDFViewer
           title="Student's Submission"
           fileType="student"
-          assignmentId="your-assignment-id"
-          onFileUpload={(file: File) => setStudentFile(file)}
+          assignmentId={assignmentId}
+          onFileUpload={(file) => setStudentFile(file)}
         />
       </div>
+
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <p>{error}</p>
+        </div>
+      )}
 
       <div className="flex justify-center">
         <Button
@@ -71,7 +90,8 @@ export default function GradingPage() {
         <GradingResult
           score={gradingResult.score}
           feedback={gradingResult.feedback}
-          similarities={[]}        />
+          similarities={gradingResult.similarities || []}
+        />
       )}
     </div>
   );
