@@ -4,7 +4,7 @@ from pathlib import Path
 import logging
 import asyncio
 from llama_index import ServiceContext, VectorStoreIndex, Document
-from llama_index.node_parsers import SentenceSplitter  # แก้ไขจาก llama_index.node_parser
+from llama_index.core.node_parser import SentenceSplitter  # แก้ไขจาก llama_index.node_parser
 from llama_index.vector_stores.milvus import MilvusVectorStore
 from llama_index.llms import CustomLLM  # แก้ไขจาก llama_index.llms.custom
 from llama_index.embeddings import BaseEmbedding  # แก้ไขจาก llama_index.embeddings.custom
