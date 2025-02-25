@@ -44,8 +44,9 @@ class LMStudioLLMClient:
                     }
                 )
                 response.raise_for_status()
-                result = response.json()
-                return result["choices"][0]["message"]["content"]
+                result_json = await response.json()
+                result = result_json["choices"][0]["message"]["content"]
+                return result
                 
         except httpx.TimeoutException:
             error_msg = "Request to LM-Studio timed out. Please check if LM-Studio is running and responsive."
