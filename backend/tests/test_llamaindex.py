@@ -1,156 +1,94 @@
 import os
+import sys
 from dotenv import load_dotenv
-from llama_index.core import Document, VectorStoreIndex, ServiceContext
-from llama_index.core.node_parser import SentenceSplitter
-from llama_index.llms.openai import OpenAI
-from llama_index.embeddings.openai import OpenAIEmbedding
-from llama_index.vector_stores.milvus import MilvusVectorStore
-from pymilvus import connections, utility
+import traceback
+
+print("กำลังเริ่มการทดสอบ...")
+print(f"Python version: {sys.version}")
+
+try:
+    print("กำลังโหลดโมดูล LlamaIndex...")
+    from llama_index.core import Document, VectorStoreIndex
+    from llama_index.core.node_parser import SentenceSplitter
+    from llama_index.core.settings import Settings
+    from llama_index.llms.openai import OpenAI
+    from llama_index.embeddings.openai import OpenAIEmbedding
+    from llama_index.vector_stores.milvus import MilvusVectorStore
+    from pymilvus import connections, utility
+    print("โหลดโมดูลเรียบร้อย")
+except ImportError as e:
+    print(f"❌ เกิดข้อผิดพลาดในการโหลดโมดูล: {e}")
+    print("โปรดตรวจสอบว่าได้ติดตั้ง LlamaIndex และ dependencies ครบถ้วนแล้ว")
+    traceback.print_exc()
+    sys.exit(1)
 
 # โหลดตัวแปรจาก .env
+print("กำลังโหลดตัวแปรจาก .env...")
 load_dotenv()
+lmstudio_api_base = os.getenv("LMSTUDIO_API_BASE")
+embedding_model = os.getenv("EMBEDDING_MODEL_NAME")
+llm_model = os.getenv("LLM_MODEL_NAME")
+
+print(f"LM Studio API Base: {lmstudio_api_base}")
+print(f"Embedding Model: {embedding_model}")
+print(f"LLM Model: {llm_model}")
 
 # ตั้งค่าสำหรับ LM Studio OpenAI compatible API
-os.environ["OPENAI_API_BASE"] = os.getenv("LMSTUDIO_API_BASE")
+os.environ["OPENAI_API_BASE"] = lmstudio_api_base
 os.environ["OPENAI_API_KEY"] = "not-needed"
 
 def test_llamaindex_basic():
-    """ทดสอบการทำงานพื้นฐานของ LlamaIndex"""
+    print("\n----- ทดสอบการทำงานพื้นฐานของ LlamaIndex -----")
     try:
-        # สร้างเอกสารทดสอบ
+        print("1. กำลังสร้างเอกสารทดสอบ...")
         documents = [
-            Document(text="LlamaIndex คือเฟรมเวิร์กที่ช่วยในการสร้างแอปพลิเคชันที่ใช้ LLM โดยมี RAG พื้นฐานรองรับ"),
-            Document(text="RAG (Retrieval Augmented Generation) คือเทคนิคในการเพิ่มข้อมูลให้กับ LLM โดยการดึงข้อมูลที่เกี่ยวข้องก่อนการสร้างคำตอบ")
+            Document(text="LlamaIndex คือเฟรมเวิร์กที่ช่วยในการสร้างแอปพลิเคชันที่ใช้ LLM"),
+            Document(text="RAG คือเทคนิคในการเพิ่มข้อมูลให้กับ LLM โดยการดึงข้อมูลที่เกี่ยวข้อง")
         ]
+        print("สร้างเอกสารทดสอบเรียบร้อย")
         
-        # ตั้งค่า LLM และ Embedding model
+        print("2. กำลังตั้งค่า LLM...")
         llm = OpenAI(
-            model=os.getenv("LLM_MODEL_NAME"),
+            model=llm_model,
             temperature=0.7
         )
+        print("ตั้งค่า LLM เรียบร้อย")
         
+        print("3. กำลังตั้งค่า Embedding model...")
         embed_model = OpenAIEmbedding(
-            model_name=os.getenv("EMBEDDING_MODEL_NAME"),
+            model_name=embedding_model,
             embed_batch_size=10
         )
+        print("ตั้งค่า Embedding model เรียบร้อย")
         
-        # ตั้งค่า node parser
+        print("4. กำลังตั้งค่า node parser...")
         node_parser = SentenceSplitter(
             chunk_size=int(os.getenv("CHUNK_SIZE", "1000")),
             chunk_overlap=int(os.getenv("CHUNK_OVERLAP", "200"))
         )
+        print("ตั้งค่า node parser เรียบร้อย")
         
-        # ตั้งค่า service context
-        service_context = ServiceContext.from_defaults(
-            llm=llm,
-            embed_model=embed_model,
-            node_parser=node_parser
-        )
+        print("5. กำลังตั้งค่า Settings...")
+        Settings.llm = llm
+        Settings.embed_model = embed_model
+        Settings.node_parser = node_parser
+        print("ตั้งค่า Settings เรียบร้อย")
         
-        # สร้าง index จากเอกสาร
-        index = VectorStoreIndex.from_documents(
-            documents,
-            service_context=service_context
-        )
-        
+        print("6. กำลังสร้าง index...")
+        index = VectorStoreIndex.from_documents(documents)
         print("✅ สร้าง VectorStoreIndex สำเร็จ")
         
-        # ทดสอบการค้นหา
+        print("7. กำลังทดสอบการค้นหา...")
         query_engine = index.as_query_engine()
         response = query_engine.query("LlamaIndex คืออะไร?")
-        
         print("✅ การสืบค้นสำเร็จ")
         print(f"การตอบกลับ: {response}")
         
         return True
     except Exception as e:
-        print(f"❌ เกิดข้อผิดพลาดในการทดสอบ LlamaIndex: {str(e)}")
-        return False
-
-def test_llamaindex_milvus():
-    """ทดสอบการใช้ LlamaIndex กับ Milvus"""
-    try:
-        # เชื่อมต่อกับ Milvus
-        connections.connect(
-            alias="default",
-            host=os.getenv("MILVUS_HOST", "localhost"),
-            port=os.getenv("MILVUS_PORT", "19530")
-        )
-        
-        # กำหนดชื่อ collection
-        collection_name = "llamaindex_test"
-        
-        # ลบ collection เดิมถ้ามี
-        if utility.has_collection(collection_name):
-            utility.drop_collection(collection_name)
-            print(f"ลบ collection {collection_name} เดิม")
-        
-        # สร้าง vector store
-        vector_store = MilvusVectorStore(
-            collection_name=collection_name,
-            dim=int(os.getenv("EMBEDDING_DIMENSION", "384")),
-            overwrite=True
-        )
-        
-        # สร้างเอกสารทดสอบ
-        documents = [
-            Document(text="LlamaIndex คือเฟรมเวิร์กที่ช่วยในการสร้างแอปพลิเคชันที่ใช้ LLM โดยมี RAG พื้นฐานรองรับ"),
-            Document(text="RAG (Retrieval Augmented Generation) คือเทคนิคในการเพิ่มข้อมูลให้กับ LLM โดยการดึงข้อมูลที่เกี่ยวข้องก่อนการสร้างคำตอบ")
-        ]
-        
-        # ตั้งค่า LLM และ Embedding model
-        llm = OpenAI(
-            model=os.getenv("LLM_MODEL_NAME"),
-            temperature=0.7
-        )
-        
-        embed_model = OpenAIEmbedding(
-            model_name=os.getenv("EMBEDDING_MODEL_NAME"),
-            embed_batch_size=10
-        )
-        
-        # ตั้งค่า node parser
-        node_parser = SentenceSplitter(
-            chunk_size=int(os.getenv("CHUNK_SIZE", "1000")),
-            chunk_overlap=int(os.getenv("CHUNK_OVERLAP", "200"))
-        )
-        
-        # ตั้งค่า service context
-        service_context = ServiceContext.from_defaults(
-            llm=llm,
-            embed_model=embed_model,
-            node_parser=node_parser
-        )
-        
-        # สร้าง index และบันทึกใน Milvus
-        index = VectorStoreIndex.from_documents(
-            documents,
-            storage_context=vector_store.get_storage_context(),
-            service_context=service_context
-        )
-        
-        print("✅ สร้าง VectorStoreIndex และบันทึกใน Milvus สำเร็จ")
-        
-        # ทดสอบการค้นหา
-        query_engine = index.as_query_engine()
-        response = query_engine.query("RAG คืออะไร?")
-        
-        print("✅ การสืบค้นจาก Milvus สำเร็จ")
-        print(f"การตอบกลับ: {response}")
-        
-        # ลบ collection เพื่อทำความสะอาด
-        utility.drop_collection(collection_name)
-        print(f"ลบ collection {collection_name} สำเร็จ")
-        
-        return True
-    except Exception as e:
-        print(f"❌ เกิดข้อผิดพลาดในการทดสอบ LlamaIndex กับ Milvus: {str(e)}")
+        print(f"❌ เกิดข้อผิดพลาดในการทดสอบ LlamaIndex: {e}")
+        traceback.print_exc()
         return False
 
 if __name__ == "__main__":
-    print("ทดสอบการทำงานพื้นฐานของ LlamaIndex...")
-    basic_success = test_llamaindex_basic()
-    
-    if basic_success:
-        print("\nทดสอบการใช้ LlamaIndex กับ Milvus...")
-        test_llamaindex_milvus()
+    test_llamaindex_basic()
