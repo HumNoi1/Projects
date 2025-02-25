@@ -26,12 +26,27 @@ def test_grade_assignment_endpoint():
     
     # Mock the grading service
     with patch('app.api.v1.endpoints.grading.grading_service.grade_assignment') as mock_grade:
-        mock_grade.return_value = {"success": True, "grading_result": "Score: 85"}
+        mock_grade.return_value = {
+            "success": True,
+            "grading_result": {
+                "score": 85,
+                "feedback": "Good answer",
+                "areas_for_improvement": ["Could add more detail"]
+            }
+        }
         
         # Make request
         response = client.post("/api/v1/grading/grade/", json=test_data)
         
         # Verify
         assert response.status_code == 200
-        assert response.json() == {"success": True, "grading_result": "Score: 85"}
+        assert response.json() == {
+            "success": True,
+            "grading_result": {
+                "score": 85,
+                "feedback": "Good answer",
+                "areas_for_improvement": ["Could add more detail"]
+            }
+        }
+        
         mock_grade.assert_called_once()
