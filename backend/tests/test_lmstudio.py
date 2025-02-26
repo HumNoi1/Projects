@@ -3,8 +3,8 @@ import os
 
 # ค่าการตั้งค่าที่ใช้สำหรับการทดสอบเท่านั้น
 LMSTUDIO_URL = os.getenv("LMSTUDIO_URL", "http://localhost:1234/v1")
-LMSTUDIO_MODEL = os.getenv("LMSTUDIO_MODEL", "llama3")
-EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "embedding-model")
+LMSTUDIO_MODEL = os.getenv("LMSTUDIO_MODEL", "llama-3.2-3b-instruct")
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-bge-m3")
 
 def test_lmstudio_connection():
     """
