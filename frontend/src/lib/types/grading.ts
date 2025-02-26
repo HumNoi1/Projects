@@ -7,7 +7,7 @@ export interface GradingResponse {
     student_id: string;
     score: number;
     feedback: string;
-    strenghts: string[];
+    strengths: string[];
     areas_for_improvement: string[];
     missed_concepts: string[];
 }
