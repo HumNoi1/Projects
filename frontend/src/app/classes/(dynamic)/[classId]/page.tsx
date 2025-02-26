@@ -1,14 +1,16 @@
-// frontend/app/classes/[classId]/page.tsx
+// app/classes/(dynamic)/[classId]/page.tsx
 import Link from 'next/link';
-import { Upload, List, Users } from 'lucide-react';
-import { getClassById, getAssignmentsByClassId } from '@/lib/supabase';
+import { Upload, List } from 'lucide-react';
+import { getClassById } from '@/lib/supabase';
 
 export default async function ClassDetailPage({ 
   params 
 }: { 
   params: { classId: string } 
 }) {
-  const classData = await getClassById(params.classId);
+  // แก้ไขการใช้ params ตามแนวทางใหม่
+  const { classId } = await params;
+  const classData = await getClassById(classId);
   
   if (!classData) {
     return (
@@ -21,6 +23,7 @@ export default async function ClassDetailPage({
     );
   }
 
+  // ต่อจากนี้ ใช้ classId ในลิงก์ด้วยรูปแบบใหม่
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">{classData.name}</h1>
@@ -32,7 +35,7 @@ export default async function ClassDetailPage({
           
           <div className="space-y-4">
             <Link 
-              href={`/classes/${params.classId}/teacher/upload`}
+              href={`/classes/(dynamic)/${classId}/teacher/upload`}
               className="block border rounded p-4 hover:border-blue-500 hover:shadow-md transition-all"
             >
               <div className="flex items-center">
@@ -47,7 +50,7 @@ export default async function ClassDetailPage({
             </Link>
             
             <Link 
-              href={`/classes/${params.classId}/teacher/files`}
+              href={`/classes/(dynamic)/${classId}/teacher/files`}
               className="block border rounded p-4 hover:border-blue-500 hover:shadow-md transition-all"
             >
               <div className="flex items-center">
@@ -69,7 +72,7 @@ export default async function ClassDetailPage({
           
           <div className="space-y-4">
             <Link 
-              href={`/classes/${params.classId}/student/upload`}
+              href={`/classes/(dynamic)/${classId}/student/upload`}
               className="block border rounded p-4 hover:border-blue-500 hover:shadow-md transition-all"
             >
               <div className="flex items-center">
@@ -84,7 +87,7 @@ export default async function ClassDetailPage({
             </Link>
             
             <Link 
-              href={`/classes/${params.classId}/student/files`}
+              href={`/classes/(dynamic)/${classId}/student/files`}
               className="block border rounded p-4 hover:border-blue-500 hover:shadow-md transition-all"
             >
               <div className="flex items-center">
@@ -98,6 +101,15 @@ export default async function ClassDetailPage({
               </div>
             </Link>
           </div>
+        </div>
+      </div>
+      
+      {/* แสดงข้อมูลเพิ่มเติมของห้องเรียน */}
+      <div className="mt-8 p-4 border rounded-lg bg-gray-50">
+        <h3 className="font-medium text-gray-700 mb-2">ข้อมูลห้องเรียน</h3>
+        <div className="text-sm text-gray-600">
+          <p>วันที่สร้าง: {new Date(classData.created_at).toLocaleDateString('th-TH')}</p>
+          <p>จำนวนงาน: {classData.assignment_count || 0} รายการ</p>
         </div>
       </div>
     </div>

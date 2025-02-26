@@ -9,7 +9,8 @@ export default async function StudentUploadPage({
 }: { 
   params: { classId: string } 
 }) {
-  const classData = await getClassById(params.classId);
+  const { classId } = await params;
+  const classData = await getClassById(classId);
   
   if (!classData) {
     return (
