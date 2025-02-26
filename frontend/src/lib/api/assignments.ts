@@ -1,6 +1,9 @@
 // frontend/lib/api/assignments.ts
 import { Assignment } from '../types/assignment';
 
+// Define the API_URL constant at the top of your file
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 export async function getAssignments(): Promise<Assignment[]> {
   // Note: This endpoint isn't shown in the provided files, so this is an assumption
   const response = await fetch(`${API_URL}/assignments`);

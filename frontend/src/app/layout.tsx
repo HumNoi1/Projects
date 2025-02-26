@@ -1,7 +1,7 @@
 // frontend/src/app/layout.tsx
 import React from 'react';
 import { Navbar } from '../components/layout/navbar';
-import 'global.css';
+import './globals.css';
 
 export const metadata = {
   title: 'ระบบตรวงานอัตโนมัติ',
