@@ -1,5 +1,5 @@
-from langchain.llms import LlamaCpp
-from langchain.chat_models import ChatOpenAI
+from langchain_community.llms import LlamaCpp
+from langchain_community.chat_models import ChatOpenAI
 from app.core.config import settings
 import os
 

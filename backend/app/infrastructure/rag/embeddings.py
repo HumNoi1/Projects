@@ -1,4 +1,4 @@
-from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain_community.embeddings import OpenAIEmbeddings
 from app.core.config import settings
 
 class EmbeddingService:

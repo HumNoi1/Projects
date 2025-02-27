@@ -17,36 +17,12 @@ def get_supabase_client():
         return None
 
 # ตัวแปร global สำหรับเก็บ client
-supabase = get_supabase_client()
+supabase = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
 
 def get_db():
-    """
-    Dependency function สำหรับดึง Supabase client
-    เพื่อใช้ในเส้นทาง API
-    """
-    if supabase is None:
-        # Mock client สำหรับการพัฒนา - สามารถปรับเปลี่ยนตามความต้องการ
-        class MockSupabaseClient:
-            def table(self, table_name):
-                return self
-                
-            def select(self, *args):
-                return self
-                
-            def eq(self, *args):
-                return self
-                
-            def execute(self):
-                return MockResponse()
-                
-            def insert(self, data):
-                print(f"MOCK: Would insert {data}")
-                return self
-        
-        class MockResponse:
-            data = []
-        
-        print("Warning: Using MockSupabaseClient for development")
-        return MockSupabaseClient()
-    
-    return supabase
+    try:
+        # ทดสอบการเชื่อมต่อ
+        supabase.table('classes').select('*').limit(1).execute()
+        return supabase
+    except Exception as e:
+        raise Exception(f"Database error: {str(e)})")
