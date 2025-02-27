@@ -63,8 +63,10 @@ export default function FileUpload({
         router.push(basePath);
         router.refresh();
       }, 1500);
-    } catch (err: any) {
-      setError(err.message || 'เกิดข้อผิดพลาดในการอัปโหลดไฟล์');
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการอัปโหลดไฟล์'
+      );
     } finally {
       setLoading(false);
     }
@@ -76,7 +78,7 @@ export default function FileUpload({
       <p className="mb-6 text-gray-600">{description}</p>
       
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="border-2 border-dashed rounded-lg p-8 text-center">
+        <div className="border-2 border-dashed rounded-lg p-8 text-center relative">
           {file ? (
             <div className="space-y-2">
               <div className="font-medium text-green-600">{file.name}</div>
@@ -96,16 +98,18 @@ export default function FileUpload({
               </div>
               <p className="mb-2">ลากไฟล์มาวางที่นี่ หรือคลิกเพื่อเลือกไฟล์</p>
               <p className="text-sm text-gray-500">รองรับเฉพาะไฟล์ PDF เท่านั้น</p>
+              <label htmlFor="file-upload" className="mt-4 inline-block cursor-pointer px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-md text-sm">
+                เลือกไฟล์
+              </label>
+              <input
+                type="file"
+                id="file-upload"
+                accept=".pdf"
+                onChange={handleFileChange}
+                className="hidden"
+              />
             </div>
           )}
-          
-          <input
-            type="file"
-            id="file-upload"
-            accept=".pdf"
-            onChange={handleFileChange}
-            className={file ? "hidden" : "absolute inset-0 w-full h-full opacity-0 cursor-pointer"}
-          />
         </div>
         
         {error && (

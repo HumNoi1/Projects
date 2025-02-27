@@ -22,7 +22,7 @@ async function ClassList() {
       {classes.map((classItem) => (
         <Link 
           key={classItem.id} 
-          href={`/classes/(dynamic)/${classItem.id}`}
+          href={`/classes/${classItem.id}`}
           className="block border rounded-lg p-4 hover:border-blue-500 hover:shadow-md transition-all"
         >
           <h2 className="text-lg font-semibold">{classItem.name}</h2>

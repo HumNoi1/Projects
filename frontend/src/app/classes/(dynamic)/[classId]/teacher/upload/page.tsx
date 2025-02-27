@@ -1,4 +1,4 @@
-// frontend/app/classes/[classId]/teacher/upload/page.tsx
+// frontend/app/classes/(dynamic)/[classId]/teacher/upload/page.tsx
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import FileUpload from '@/components/ui/file-upload';
@@ -9,6 +9,7 @@ export default async function TeacherUploadPage({
 }: { 
   params: { classId: string } 
 }) {
+  // แก้ไขตรงนี้ - await params ก่อนใช้งาน
   const { classId } = await params;
   const classData = await getClassById(classId);
   
@@ -27,7 +28,7 @@ export default async function TeacherUploadPage({
     <div>
       <div className="mb-6">
         <Link 
-          href={`/classes/${params.classId}`}
+          href={`/classes/${classId}`}
           className="flex items-center text-blue-500 hover:underline"
         >
           <ChevronLeft size={16} className="mr-1" />
@@ -37,7 +38,7 @@ export default async function TeacherUploadPage({
       
       <FileUpload 
         fileType="teacher"
-        assignmentId={params.classId}
+        assignmentId={classId}
         title="อัปโหลดไฟล์เฉลย"
         description="อัปโหลดไฟล์เฉลยสำหรับงานที่มอบหมายให้นักเรียน ระบบจะใช้ไฟล์นี้ในการตรวจงานอัตโนมัติ"
       />

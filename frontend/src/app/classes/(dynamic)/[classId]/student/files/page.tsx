@@ -31,8 +31,9 @@ export default async function StudentFilesPage({
 }: { 
   params: { classId: string } 
 }) {
-  const classData = await getClassById(params.classId);
-  const files = await getStudentFiles(params.classId);
+  const { classId } = await params;
+  const classData = await getClassById(classId);
+  const files = await getStudentFiles(classId);
   
   if (!classData) {
     return (

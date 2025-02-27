@@ -8,7 +8,6 @@ export default async function ClassDetailPage({
 }: { 
   params: { classId: string } 
 }) {
-  // แก้ไขการใช้ params ตามแนวทางใหม่
   const { classId } = await params;
   const classData = await getClassById(classId);
   
@@ -23,7 +22,6 @@ export default async function ClassDetailPage({
     );
   }
 
-  // ต่อจากนี้ ใช้ classId ในลิงก์ด้วยรูปแบบใหม่
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">{classData.name}</h1>
@@ -35,7 +33,7 @@ export default async function ClassDetailPage({
           
           <div className="space-y-4">
             <Link 
-              href={`/classes/(dynamic)/${classId}/teacher/upload`}
+              href={`/classes/${classId}/teacher/upload`}
               className="block border rounded p-4 hover:border-blue-500 hover:shadow-md transition-all"
             >
               <div className="flex items-center">
@@ -50,7 +48,7 @@ export default async function ClassDetailPage({
             </Link>
             
             <Link 
-              href={`/classes/(dynamic)/${classId}/teacher/files`}
+              href={`/classes/${classId}/teacher/files`}
               className="block border rounded p-4 hover:border-blue-500 hover:shadow-md transition-all"
             >
               <div className="flex items-center">
@@ -72,7 +70,7 @@ export default async function ClassDetailPage({
           
           <div className="space-y-4">
             <Link 
-              href={`/classes/(dynamic)/${classId}/student/upload`}
+              href={`/classes/${classId}/student/upload`}
               className="block border rounded p-4 hover:border-blue-500 hover:shadow-md transition-all"
             >
               <div className="flex items-center">
@@ -87,7 +85,7 @@ export default async function ClassDetailPage({
             </Link>
             
             <Link 
-              href={`/classes/(dynamic)/${classId}/student/files`}
+              href={`/classes/${classId}/student/files`}
               className="block border rounded p-4 hover:border-blue-500 hover:shadow-md transition-all"
             >
               <div className="flex items-center">
@@ -104,10 +102,11 @@ export default async function ClassDetailPage({
         </div>
       </div>
       
-      {/* แสดงข้อมูลเพิ่มเติมของห้องเรียน */}
+      {/* ข้อมูลเพิ่มเติมของห้องเรียน */}
       <div className="mt-8 p-4 border rounded-lg bg-gray-50">
         <h3 className="font-medium text-gray-700 mb-2">ข้อมูลห้องเรียน</h3>
         <div className="text-sm text-gray-600">
+          <p>คำอธิบาย: {classData.description || 'ไม่มีคำอธิบาย'}</p>
           <p>วันที่สร้าง: {new Date(classData.created_at).toLocaleDateString('th-TH')}</p>
           <p>จำนวนงาน: {classData.assignment_count || 0} รายการ</p>
         </div>
