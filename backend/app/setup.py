@@ -1,4 +1,6 @@
-from app.infrastructure.rag.milvus_client import setup_milvus_collection
+from langsmith import expect
+from pymilvus import MilvusClient
+from app.infrastructure.rag.milvus_client import MilvusClient
 from app.core.config import settings
 import os
 
@@ -13,10 +15,7 @@ def setup_app():
     
     # ตั้งค่า Milvus
     try:
-        collection = setup_milvus_collection()
-        print(f"Milvus collection setup complete: {collection.name}")
+        client = MilvusClient()
     except Exception as e:
-        print(f"Error setting up Milvus: {e}")
-        print("You may need to start Milvus server first or check your connection settings.")
-    
-    print("Setup complete!")
+        print(f"Warning: Could not setup Milvus collection: {str(e)}")
+        return client

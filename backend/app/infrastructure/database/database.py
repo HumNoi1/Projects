@@ -2,6 +2,7 @@ from supabase import create_client
 from app.core.config import settings
 from fastapi import Depends
 
+
 # สร้างแบบมีการจัดการข้อผิดพลาด
 def get_supabase_client():
     try:
@@ -17,7 +18,7 @@ def get_supabase_client():
         return None
 
 # ตัวแปร global สำหรับเก็บ client
-supabase = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
+supabase = create_client(supabase_url=settings.SUPABASE_URL, supabase_key=settings.SUPABASE_KEY)
 
 def get_db():
     try:

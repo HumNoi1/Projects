@@ -1,21 +1,20 @@
-from pypdf import PdfReader
 import os
+from pypdf import PdfReader
 
-def extract_text_from_pdf(file_path: str) -> str:
+def extract_text_from_pdf(file_path):
     """
     Extract text content from a PDF file.
     """
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f"File not found: {file_path}")
-    
     try:
+        if not os.path.exists(file_path):
+            return "File not found"
+            
         reader = PdfReader(file_path)
         text = ""
-        
         for page in reader.pages:
-            text += page.extract_text() + "\n"
-            
+            text += page.extract_text() or ""
+        
         return text
     except Exception as e:
         print(f"Error extracting text from PDF: {str(e)}")
-        return ""
+        return f"Error extracting text: {str(e)}"

@@ -17,3 +17,12 @@ class GradingSimilarity(BaseModel):
     teacher_text: str
     student_text: str
     similarity: float
+    
+class BatchGradingRequest(BaseModel):
+    student_id: List[str]
+    
+class BatchGradingResponse(BaseModel):
+    batch_id: str
+    assignment_id: str
+    completed: bool
+    results: List[GradingResponse] = []
