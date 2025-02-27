@@ -85,7 +85,7 @@ export async function startBatchGrading(
   formData.append('teacher_file', teacherFile);
   formData.append('assignment_id', assignmentId);
 
-  const res = await fetch(`${API_BASE_URL}/batch-grading`, {
+  const res = await fetch(`${API_BASE_URL}batch-grading`, {
     method: 'POST',
     body: formData,
   });

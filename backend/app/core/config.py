@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings
-from typing import List, Optional
+from typing import List, Optional, Union
 
 class Settings(BaseSettings):
     # API configuration
@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Grading LLM"
     
     # CORS
-    CORS_ORIGINS: List[str] = ["http://localhost:3000"]
+    CORS_ORIGINS: Union[List[str]] = ["http://localhost:3000"]
     
     # Supabase
     SUPABASE_URL: Optional[str] = None
@@ -32,5 +32,13 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+        
+    @property
+    def cors_origins(self) -> List[str]:
+        """ แปลง CORS_ORIGINS เป็นรูปแบบที่ถูกต้องเสมอ """
+        if isinstance(self.CORS_ORIGINS, str):
+            # ถ้าเป็น string เดียวอาจมีหลาย origins คั่นด้วย comma
+            return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
+        return self.CORS_ORIGINS
 
 settings = Settings()

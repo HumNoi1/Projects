@@ -10,6 +10,7 @@ from app.setup import setup_app
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler()]
 )
 
 logger = logging.getLogger(__name__)
@@ -20,10 +21,13 @@ app = FastAPI(
     version="0.1.0",
 )
 
+origins = settings.cors_origins
+logging.info(f"CORS origins: {origins}")
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
